@@ -1,5 +1,6 @@
 """Calculadora gráfica com operações básicas e histórico de cálculos."""
 
+import re
 import tkinter as tk
 from decimal import Decimal, DecimalException, DivisionByZero
 from typing import Optional
@@ -57,6 +58,8 @@ class Calculadora:
         self.operador: Optional[str] = None
         self.substituir_atual = False
         self.erro = False
+        self.editando_expressao = False
+        self.edicao_invalida = False
 
         self._montar_interface()
         self._atualizar_expressao()
@@ -76,19 +79,27 @@ class Calculadora:
 
         self.display = tk.StringVar(value=self.valor_atual)
         self.expressao = tk.StringVar()
-        tk.Label(
+        self.entrada_expressao = tk.Entry(
             conteudo,
             textvariable=self.expressao,
-            font=("Arial", 12),
-            fg=COR_SECUNDARIA,
             bg=COR_DISPLAY,
-            anchor="e",
+            fg=COR_SECUNDARIA,
+            insertbackground=COR_TEXTO,
+            selectbackground=COR_BOTAO_OPERADOR,
+            exportselection=False,
+            font=("Arial", 12),
             justify="right",
             width=30,
-            wraplength=360,
-            padx=10,
-            pady=6,
-        ).grid(row=1, column=0, sticky="ew")
+            relief="flat",
+            bd=0,
+            cursor="xterm",
+            highlightthickness=1,
+            highlightbackground=COR_BOTAO,
+            highlightcolor=COR_DESTAQUE,
+        )
+        self.entrada_expressao.grid(row=1, column=0, sticky="ew", ipady=6)
+        self.entrada_expressao.bind("<FocusIn>", self._iniciar_edicao)
+        self.entrada_expressao.bind("<KeyRelease>", self._sincronizar_expressao)
 
         visor = tk.Entry(
             conteudo,
@@ -190,6 +201,8 @@ class Calculadora:
         self._atualizar_expressao()
 
     def _atualizar_expressao(self) -> None:
+        if self.editando_expressao:
+            return
         if self.erro or self.operador is None or self.valor_anterior is None:
             self.expressao.set("")
             return
@@ -198,10 +211,65 @@ class Calculadora:
             texto += f" {self.valor_atual}"
         self.expressao.set(texto)
 
+    def _iniciar_edicao(self, _evento: tk.Event) -> None:
+        self.editando_expressao = True
+        texto = self.expressao.get()
+        if texto.endswith("="):
+            self.expressao.set(texto[:-1].rstrip())
+
+    def _inserir_expressao(self, texto: str) -> None:
+        entrada = self.entrada_expressao
+        if entrada.selection_present():
+            inicio = entrada.index(tk.SEL_FIRST)
+            fim = entrada.index(tk.SEL_LAST)
+            entrada.delete(inicio, fim)
+            entrada.icursor(inicio)
+        else:
+            inicio = entrada.index(tk.INSERT)
+        entrada.insert(inicio, texto)
+        entrada.icursor(inicio + len(texto))
+        entrada.selection_clear()
+        self.editando_expressao = True
+        self._sincronizar_expressao()
+
+    def _sincronizar_expressao(self, _evento: Optional[tk.Event] = None) -> None:
+        if not self.editando_expressao:
+            return
+        texto = self.expressao.get()
+        if "," in texto:
+            self.expressao.set(texto.replace(",", "."))
+        padrao = (
+            r"\s*(-?(?:\d+(?:\.\d*)?|\.\d+))"
+            r"(?:\s*([+\-*/])(?:\s*(-?(?:\d+(?:\.\d*)?|\.\d+))?)?)?"
+            r"\s*(?:=)?\s*"
+        )
+        correspondencia = re.fullmatch(padrao, self.expressao.get())
+        if correspondencia is None:
+            self.edicao_invalida = True
+            self.display.set("Entrada inválida")
+            return
+
+        primeiro, operador, segundo = correspondencia.groups()
+        self.erro = False
+        self.edicao_invalida = False
+        if operador is None:
+            self.valor_anterior = None
+            self.operador = None
+            self.valor_atual = primeiro
+            self.substituir_atual = False
+        else:
+            self.valor_anterior = Decimal(primeiro)
+            self.operador = operador
+            self.substituir_atual = segundo is None
+            self.valor_atual = segundo if segundo is not None else primeiro
+        self.display.set(self.valor_atual)
+
     def _registrar_historico(self, expressao: str) -> None:
         self.historico.insert(0, expressao)
 
     def _mostrar_erro(self, mensagem: str) -> None:
+        self.editando_expressao = False
+        self.edicao_invalida = False
         self.valor_atual = mensagem
         self.display.set(mensagem)
         self.erro = True
@@ -211,6 +279,9 @@ class Calculadora:
         self._atualizar_expressao()
 
     def digito(self, numero: str) -> None:
+        if self.editando_expressao:
+            self._inserir_expressao(numero)
+            return
         if self.erro or self.substituir_atual:
             if self.operador is None:
                 self.expressao.set("")
@@ -224,6 +295,9 @@ class Calculadora:
         self._atualizar_display()
 
     def decimal(self) -> None:
+        if self.editando_expressao:
+            self._inserir_expressao(".")
+            return
         if self.erro or self.substituir_atual:
             if self.operador is None:
                 self.expressao.set("")
@@ -236,6 +310,9 @@ class Calculadora:
 
     def escolher_operador(self, operador: str) -> None:
         if self.erro:
+            return
+        if self.editando_expressao:
+            self._inserir_expressao(f" {operador} ")
             return
         try:
             atual = Decimal(self.valor_atual)
@@ -261,6 +338,11 @@ class Calculadora:
             self._mostrar_erro("Entrada inválida")
 
     def igual(self) -> None:
+        if self.editando_expressao:
+            self._sincronizar_expressao()
+            if self.edicao_invalida:
+                self.display.set("Entrada inválida")
+                return
         if self.erro or self.operador is None:
             return
         if self.substituir_atual:
@@ -288,6 +370,8 @@ class Calculadora:
             f"{formatar_numero(segundo)} ="
         )
         self._registrar_historico(expressao)
+        self.editando_expressao = False
+        self.edicao_invalida = False
         self.valor_atual = formatar_numero(resultado)
         self.valor_anterior = None
         self.operador = None
@@ -296,6 +380,17 @@ class Calculadora:
         self.expressao.set(texto_expressao)
 
     def apagar(self) -> None:
+        if self.editando_expressao:
+            entrada = self.entrada_expressao
+            if entrada.selection_present():
+                entrada.delete(tk.SEL_FIRST, tk.SEL_LAST)
+            else:
+                posicao = entrada.index(tk.INSERT)
+                if posicao:
+                    entrada.delete(posicao - 1)
+                    entrada.icursor(posicao - 1)
+            self._sincronizar_expressao()
+            return
         if self.erro:
             self.valor_atual = "0"
             self.erro = False
@@ -308,6 +403,8 @@ class Calculadora:
         self._atualizar_display()
 
     def limpar(self) -> None:
+        self.editando_expressao = False
+        self.edicao_invalida = False
         self.valor_atual = "0"
         self.valor_anterior = None
         self.operador = None
@@ -317,6 +414,14 @@ class Calculadora:
         self._atualizar_display()
 
     def _tecla(self, evento: tk.Event) -> None:
+        if self.janela.focus_get() == self.entrada_expressao:
+            if evento.keysym in ("Return", "KP_Enter", "equal") or evento.char == "=":
+                self.igual()
+                return "break"
+            if evento.keysym == "Escape":
+                self.limpar()
+                return "break"
+            return
         tecla = evento.char
         if tecla.isdigit():
             self.digito(tecla)
