@@ -45,6 +45,20 @@ python calculadora_grafica.py
 4. Use `←` ou `Backspace` para apagar; use `C` ou `Esc` para limpar a
    calculadora.
 
+## Screenshots
+
+### Desenvolvimento da lógica de cálculo
+
+![Código da calculadora e tratamento das operações](screenshots/copilot.png)
+
+### Exibição da expressão durante o cálculo
+
+![Implementação da expressão visível na calculadora](screenshots/copilot2.png)
+
+### Edição da expressão
+
+![Implementação da edição da expressão](screenshots/copilot3.png)
+
 ## Arquivo principal
 
 - `calculadora_grafica.py`: implementação da interface e das operações da
