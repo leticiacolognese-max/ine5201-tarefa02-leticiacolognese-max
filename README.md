@@ -67,6 +67,16 @@ python calculadora_gui.py
 
 ![Calculadora mostrando o resultado de uma operação](screenshots/calculadora2.png)
 
+## Organização do código
+
+- `criar_layout()`: monta os componentes da interface.
+- `atualizar_display(valor)`: atualiza o visor da calculadora.
+- `calcular(expressao)`: interpreta e executa uma operação.
+- `tratar_erro(mensagem)`: apresenta erros de cálculo ou de entrada.
+- `adicionar_ao_historico(expressao, resultado)`: registra o cálculo no
+  histórico.
+- `main()`: inicia a janela e a calculadora.
+
 ## Arquivo principal
 
 - `calculadora_gui.py`: implementação da interface e das operações da
