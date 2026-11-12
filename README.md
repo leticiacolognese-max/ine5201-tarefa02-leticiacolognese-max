@@ -27,13 +27,13 @@ O projeto não requer a instalação de pacotes externos.
 Abra um terminal na pasta do projeto e execute:
 
 ```powershell
-py -3 calculadora_grafica.py
+py -3 calculadora_gui.py
 ```
 
 Se o comando `py` não estiver disponível, tente:
 
 ```powershell
-python calculadora_grafica.py
+python calculadora_gui.py
 ```
 
 ## Como usar
@@ -69,7 +69,7 @@ python calculadora_grafica.py
 
 ## Arquivo principal
 
-- `calculadora_grafica.py`: implementação da interface e das operações da
+- `calculadora_gui.py`: implementação da interface e das operações da
   calculadora.
 ## Autoras
 
