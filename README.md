@@ -59,7 +59,19 @@ python calculadora_grafica.py
 
 ![Implementação da edição da expressão](screenshots/copilot3.png)
 
+### Calculadora inicial
+
+![Calculadora aberta](screenshots/calculadora.png)
+
+### Cálculo realizado
+
+![Calculadora mostrando o resultado de uma operação](screenshots/calculadora2.png)
+
 ## Arquivo principal
 
 - `calculadora_grafica.py`: implementação da interface e das operações da
   calculadora.
+## Autoras
+
+- Karoline de Quadros Correia
+- Letícia Olivo Colognese
